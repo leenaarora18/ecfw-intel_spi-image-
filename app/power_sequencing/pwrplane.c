@@ -411,7 +411,7 @@ static inline int pwrseq_task_init(void)
 		}
 	} else {
 		LOG_DBG("PM_RSMRST_G3SAF_P");
-		ret = gpio_write_pin(PM_RSMRST, 1);
+		ret = gpio_write_pin(PM_RSMRST, 0);
 		if (ret) {
 			LOG_ERR("Failed to write PM_RSMRST");
 			return ret;
@@ -820,109 +820,227 @@ static void power_off(void)
 }
 
 
+// static int power_on(void)
+// {
+// 	int ret;
+
+// 	LOG_INF("%s", __func__);
+
+// 	pwrseq_reset();
+
+// #ifdef CONFIG_SOC_DEBUG_AWARENESS
+// 	soc_debug_consent_kbs();
+// #endif
+// #ifdef CONFIG_DNX_EC_ASSISTED_TRIGGER
+// 	dnx_ec_assisted_manage();
+// #endif
+// 	ret = wait_for_pin(RSMRST_PWRGD,
+// 			   RSMRST_PWRDG_TIMEOUT, 1);
+// 	if (ret) {
+// 		LOG_ERR("RSMRST_PWRGD timeout");
+// 		pwrseq_error(ERR_RSMRST_PWRGD);
+// 		return ret;
+// 	}
+
+// 	ret = gpio_write_pin(PM_RSMRST, 1);
+// 	if (ret) {
+// 		LOG_ERR("Unable to initialize %d ", gpio_get_pin(PM_RSMRST));
+// 		return ret;
+// 	}
+
+// #ifdef CONFIG_POSTCODE_MANAGEMENT
+// 	port80_display_on();
+// #endif
+
+// 	/* Check for SLPS5#, SLPS4#, SLPS3# signals */
+// 	ret = check_slp_signals();
+// 	if (ret) {
+// 		return ret;
+// 	}
+
+// 	ret = wait_for_vwire(ESPI_VWIRE_SIGNAL_SLP_A,
+// 			     TIMEOUT_TO_US(sw_strps()->timeouts.slp_m),
+// 			     ESPIHUB_VW_HIGH, false);
+// 	if (ret) {
+// 		pwrseq_error(ERR_PM_SLP_M);
+// 		return ret;
+// 	}
+
+
+// 	LOG_DBG("Waiting for ALL_SYS_PWRGD to go HIGH");
+// 	ret = wait_for_pin(ALL_SYS_PWRGD,
+// 			   TIMEOUT_TO_US(sw_strps()->timeouts.all_sys_pwrg),
+// 			   1);
+// 	if (ret) {
+// 		pwrseq_error(ERR_ALL_SYS_PWRGD);
+// 		LOG_ERR("ALL_SYS_PWRGD timed out\n");
+// 		return ret;
+// 	}
+
+// 	LOG_DBG("ALL_SYS_PWRGD is HIGH");
+// 	k_busy_wait(VR_ON_RAMP_DELAY_US);
+
+// #ifdef VCCST_PWRGD
+// 	ret = gpio_write_pin(VCCST_PWRGD, 1);
+// 	if (ret) {
+// 		LOG_ERR("Failed to drive VCCST_PWRGD");
+// 		return ret;
+// 	}
+// #endif
+// 	ret = gpio_write_pin(PCH_PWROK, 1);
+// 	if (ret) {
+// 		LOG_ERR("Failed to indicate eSPI master to run");
+// 		return ret;
+// 	}
+
+// 	k_msleep(SYS_PWR_OK_DELAY);
+
+// 	ret = gpio_write_pin(SYS_PWROK, 1);
+// 	if (ret) {
+// 		LOG_ERR("Failed to indicate system power is ok");
+// 		return ret;
+// 	}
+
+// 	ret = gpio_write_pin(WAKE_SCI, 1);
+// 	if (ret) {
+// 		LOG_ERR("Failed to indicate eSPI master to wake");
+// 		return ret;
+// 	}
+
+// 	ret = wait_for_vwire(ESPI_VWIRE_SIGNAL_PLTRST,
+// 			     TIMEOUT_TO_US(sw_strps()->timeouts.plt_rst),
+// 			     ESPIHUB_VW_HIGH, false);
+// 	if (ret) {
+// 		pwrseq_error(ERR_PLT_RST);
+// 		return ret;
+// 	}
+
+// 	gpio_write_pin(EC_PWRBTN_LED, HIGH);
+
+// #ifdef CONFIG_ESPI_PERIPHERAL_8042_KBC
+// 	kbc_enable_interface();
+// #endif
+// 	LOG_INF("%s new state %d", __func__, current_state);
+
+// 	return 0;
+// }
+
+
 static int power_on(void)
 {
-	int ret;
+    int ret;
 
-	LOG_INF("%s", __func__);
+    LOG_INF("%s", __func__);
 
-	pwrseq_reset();
+    // Reset power sequencing before starting
+    pwrseq_reset();
 
 #ifdef CONFIG_SOC_DEBUG_AWARENESS
-	soc_debug_consent_kbs();
+    soc_debug_consent_kbs();
 #endif
 #ifdef CONFIG_DNX_EC_ASSISTED_TRIGGER
-	dnx_ec_assisted_manage();
+    dnx_ec_assisted_manage();
 #endif
-	ret = wait_for_pin(RSMRST_PWRGD,
-			   RSMRST_PWRDG_TIMEOUT, 1);
-	if (ret) {
-		LOG_ERR("RSMRST_PWRGD timeout");
-		pwrseq_error(ERR_RSMRST_PWRGD);
-		return ret;
-	}
 
-	ret = gpio_write_pin(PM_RSMRST, 1);
-	if (ret) {
-		LOG_ERR("Unable to initialize %d ", gpio_get_pin(PM_RSMRST));
-		return ret;
-	}
+    // Wait for RSMRST_PWRGD to go high
+    ret = wait_for_pin(RSMRST_PWRGD, RSMRST_PWRDG_TIMEOUT, 1);// 
+    if (ret) {
+        LOG_ERR("RSMRST_PWRGD timeout");
+        pwrseq_error(ERR_RSMRST_PWRGD);
+        return ret;
+    }
+    
+    // Ensure PM_RSMRST is set high
+    ret = gpio_write_pin(PM_RSMRST, 0);
+    if (ret) {
+        LOG_ERR("Unable to initialize %d ", gpio_get_pin(PM_RSMRST));
+        return ret;
+    }
 
 #ifdef CONFIG_POSTCODE_MANAGEMENT
-	port80_display_on();
+    port80_display_on();
 #endif
 
-	/* Check for SLPS5#, SLPS4#, SLPS3# signals */
-	ret = check_slp_signals();
-	if (ret) {
-		return ret;
-	}
+    // Check SLP signals (SLPS5#, SLPS4#, SLPS3#)
+    ret = check_slp_signals();
+    if (ret) {
+        return ret;
+    }
 
-	ret = wait_for_vwire(ESPI_VWIRE_SIGNAL_SLP_A,
-			     TIMEOUT_TO_US(sw_strps()->timeouts.slp_m),
-			     ESPIHUB_VW_HIGH, false);
-	if (ret) {
-		pwrseq_error(ERR_PM_SLP_M);
-		return ret;
-	}
+    // ADDITION: Introduced delay after checking SLP signals to give power system time to stabilize
+    k_msleep(50);  // Additional delay for stabilization
 
+    // Wait for ESPI SLP_A signal
+    ret = wait_for_vwire(ESPI_VWIRE_SIGNAL_SLP_A, TIMEOUT_TO_US(sw_strps()->timeouts.slp_m), ESPIHUB_VW_HIGH, false);
+    if (ret) {
+        pwrseq_error(ERR_PM_SLP_M);
+        return ret;
+    }
 
-	LOG_DBG("Waiting for ALL_SYS_PWRGD to go HIGH");
-	ret = wait_for_pin(ALL_SYS_PWRGD,
-			   TIMEOUT_TO_US(sw_strps()->timeouts.all_sys_pwrg),
-			   1);
-	if (ret) {
-		pwrseq_error(ERR_ALL_SYS_PWRGD);
-		LOG_ERR("ALL_SYS_PWRGD timed out\n");
-		return ret;
-	}
-
-	LOG_DBG("ALL_SYS_PWRGD is HIGH");
-	k_busy_wait(VR_ON_RAMP_DELAY_US);
-
+    // ADDITION: Introduced delay before checking ALL_SYS_PWRGD signal to allow proper power stabilization
+    LOG_DBG("Waiting for ALL_SYS_PWRGD to go HIGH");
+    k_msleep(50);  // Added delay before checking ALL_SYS_PWRGD
+    ret = wait_for_pin(ALL_SYS_PWRGD, TIMEOUT_TO_US(sw_strps()->timeouts.all_sys_pwrg), 1);
+    if (ret) {
+        pwrseq_error(ERR_ALL_SYS_PWRGD);
+        LOG_ERR("ALL_SYS_PWRGD timed out");
+        return ret;
+    }
+     k_msleep(100);  // Addition Increased delay to allow stabilization after ALL_SYS_PWRGD is high
+    LOG_DBG("ALL_SYS_PWRGD is HIGH");
+    k_busy_wait(VR_ON_RAMP_DELAY_US);  // Short wait for voltage ramp-up
+    
 #ifdef VCCST_PWRGD
-	ret = gpio_write_pin(VCCST_PWRGD, 1);
-	if (ret) {
-		LOG_ERR("Failed to drive VCCST_PWRGD");
-		return ret;
-	}
+    // Ensure VCCST_PWRGD is set high
+    ret = gpio_write_pin(VCCST_PWRGD, 1);
+    if (ret) {
+        LOG_ERR("Failed to drive VCCST_PWRGD");
+        return ret;
+    }
 #endif
-	ret = gpio_write_pin(PCH_PWROK, 1);
-	if (ret) {
-		LOG_ERR("Failed to indicate eSPI master to run");
-		return ret;
-	}
 
-	k_msleep(SYS_PWR_OK_DELAY);
+    // ADDITION: Introduced delay before setting PCH_PWROK high to ensure other power signals have stabilized
+    k_msleep(50);  // Added delay before driving PCH_PWROK
+    ret = gpio_write_pin(PCH_PWROK, 1);
+    if (ret) {
+        LOG_ERR("Failed to indicate eSPI master to run");
+        return ret;
+    }
+    k_msleep(100);  // Addiction Increased delay to allow for power stabilization
+    // Delay to allow system power to stabilize before moving to SYS_PWROK
+    k_msleep(SYS_PWR_OK_DELAY);  // Existing delay
 
-	ret = gpio_write_pin(SYS_PWROK, 1);
-	if (ret) {
-		LOG_ERR("Failed to indicate system power is ok");
-		return ret;
-	}
+    // Set SYS_PWROK high to indicate system power is okay
+    ret = gpio_write_pin(SYS_PWROK, 1);
+    if (ret) {
+        LOG_ERR("Failed to indicate system power is OK");
+        return ret;
+    }
 
-	ret = gpio_write_pin(WAKE_SCI, 1);
-	if (ret) {
-		LOG_ERR("Failed to indicate eSPI master to wake");
-		return ret;
-	}
+    // Signal WAKE_SCI to wake the system
+    ret = gpio_write_pin(WAKE_SCI, 1);
+    if (ret) {
+        LOG_ERR("Failed to indicate eSPI master to wake");
+        return ret;
+    }
 
-	ret = wait_for_vwire(ESPI_VWIRE_SIGNAL_PLTRST,
-			     TIMEOUT_TO_US(sw_strps()->timeouts.plt_rst),
-			     ESPIHUB_VW_HIGH, false);
-	if (ret) {
-		pwrseq_error(ERR_PLT_RST);
-		return ret;
-	}
+    // Wait for PLTRST signal
+    ret = wait_for_vwire(ESPI_VWIRE_SIGNAL_PLTRST, TIMEOUT_TO_US(sw_strps()->timeouts.plt_rst), ESPIHUB_VW_HIGH, false);
+    if (ret) {
+        pwrseq_error(ERR_PLT_RST);
+        return ret;
+    }
 
-	gpio_write_pin(EC_PWRBTN_LED, HIGH);
+    // Turn on the power button LED (optional)
+    gpio_write_pin(EC_PWRBTN_LED, HIGH);
 
 #ifdef CONFIG_ESPI_PERIPHERAL_8042_KBC
-	kbc_enable_interface();
+    kbc_enable_interface();
 #endif
-	LOG_INF("%s new state %d", __func__, current_state);
 
-	return 0;
+    LOG_INF("%s new state %d", __func__, current_state);
+
+    return 0;
 }
 
 static void suspend(void)

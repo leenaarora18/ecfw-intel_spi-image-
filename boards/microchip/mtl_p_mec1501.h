@@ -79,7 +79,7 @@ enum i2c_addr_set {
 #define PM_RSMRST_G3SAF_P		EC_GPIO_054
 #define PM_RSMRST_MAF_P			EC_GPIO_055
 #define ALL_SYS_PWRGD			EC_GPIO_057
-#define FAN_PWR_DISABLE_N		EC_GPIO_060
+#define FAN_PWR_DISABLE_N		EC_GPIO_014
 
 /*
  * We poll this GPIO in MAF mode in order to sense the input signal040_076.

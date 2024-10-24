@@ -15,7 +15,7 @@ LOG_MODULE_REGISTER(adcsens, CONFIG_ADC_SENSORS_LOG_LEVEL);
 
 /* For cases where ADC failure occurs during LPM exit, PLL takes 3ms to lock */
 #define MAX_ADC_READ_RETRIES 3
-#define ADC_RETRY_DELAY_MS   1
+#define ADC_RETRY_DELAY_MS   1 
 
 /* ADC device */
 static const struct device *adc_dev;

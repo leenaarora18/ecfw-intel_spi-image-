@@ -59,7 +59,7 @@ struct gpio_ec_config mecc1501_cfg[] = {
 #else
 	{ DNX_FORCE_RELOAD_EC,	GPIO_INPUT},
 #endif
-	{ KBC_CAPS_LOCK,	GPIO_OUTPUT_LOW },
+	{ KBC_CAPS_LOCK,	GPIO_OUTPUT_HIGH },
 	{ I2C_ALERT_P1,		GPIO_INPUT },
 	/* PM_BATLOW NA for S platfroms, so make it input */
 	{ PM_BATLOW,		GPIO_INPUT },
